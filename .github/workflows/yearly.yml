@@ -1,16 +1,16 @@
-name: Publish Canary Anchor (Manual, One-Time)
+name: Publish Yearly (Manual, Once-Per-Year)
 
-# Publish the canary-anchor control package (one-time, never again).
-# This is a MANUAL trigger only; the anchor should never be republished.
-# Versions for anchor are stored in package.json / pyproject.toml (not computed).
+# Publish the yearly control package (once per year, never republish).
+# This is a MANUAL trigger only; the yearly package should not be republished within a year.
+# Versions for yearly are stored in package.json / pyproject.toml (semantic: YYYY.M.0).
 # After successful publish, a Git tag is created pointing to the exact commit.
 
 on:
   # Manual trigger only; no schedule or auto-triggers
   workflow_dispatch:
     inputs:
-      confirm_anchor:
-        description: 'Type "yes" to confirm publishing canary-anchor (this is one-time only)'
+      confirm_yearly:
+        description: 'Type "yes" to confirm publishing sbombs-yearly (this is once-per-year only)'
         required: true
 
 permissions:
@@ -18,30 +18,31 @@ permissions:
   id-token: write  # For OIDC trusted publishing
 
 jobs:
-  verify-anchor-safety:
+  verify-yearly-safety:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify anchor has not been published before
+      - name: Verify yearly version not already published
         run: |
-          # Check if canary-anchor tag already exists
-          if git rev-parse canary-anchor@* 2>/dev/null; then
-            echo "❌ ERROR: Anchor has already been published! Tags starting with 'canary-anchor@' found."
+          # Check if yearly tag already exists for this version
+          YEARLY_VERSION=$(cat canaries/npm/yearly/package.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+          if git rev-parse "yearly@${YEARLY_VERSION}" 2>/dev/null; then
+            echo "❌ ERROR: Yearly version ${YEARLY_VERSION} has already been published!"
             exit 1
           fi
-          echo "✓ Anchor tag check passed (not yet published)"
+          echo "✓ Yearly version check passed (not yet published)"
 
       - name: Verify confirmation
         run: |
-          if [[ "${{ github.event.inputs.confirm_anchor }}" != "yes" ]]; then
+          if [[ "${{ github.event.inputs.confirm_yearly }}" != "yes" ]]; then
             echo "❌ Confirmation not given. Aborting."
             exit 1
           fi
           echo "✓ Confirmation verified"
 
-  publish-anchor:
-    needs: verify-anchor-safety
+  publish-yearly:
+    needs: verify-yearly-safety
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,17 +63,17 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Extract anchor version from package.json
+      - name: Extract yearly version from package.json
         id: npm_version
         run: |
-          VERSION=$(cat canaries/npm/canary-anchor/package.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+          VERSION=$(cat canaries/npm/yearly/package.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
           echo "npm_version=${VERSION}" >> $GITHUB_OUTPUT
           echo "npm version: ${VERSION}"
 
-      - name: Extract anchor version from pyproject.toml
+      - name: Extract yearly version from pyproject.toml
         id: py_version
         run: |
-          VERSION=$(grep 'version = ' canaries/pypi/sbombs-canary-anchor/pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+          VERSION=$(grep 'version = ' canaries/pypi/sbombs-yearly/pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
           echo "py_version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Python version: ${VERSION}"
 
@@ -87,37 +88,37 @@ jobs:
           fi
           echo "✓ Versions match: ${NPM_V}"
 
-      - name: Build and publish sbombs-canary-anchor to PyPI
+      - name: Build and publish sbombs-yearly to PyPI
         run: |
-          cd canaries/pypi/sbombs-canary-anchor
+          cd canaries/pypi/sbombs-yearly
           
           pip install build twine
           python -m build
           ls -lh dist/
 
-      - name: Publish sbombs-canary-anchor to PyPI
+      - name: Publish sbombs-yearly to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: canaries/pypi/sbombs-canary-anchor/dist/
+          packages-dir: canaries/pypi/sbombs-yearly/dist/
           repository-url: https://upload.pypi.org/legacy/
 
-      - name: Build and publish @sbombs/canary-anchor to npm
+      - name: Build and publish @sbombs/yearly to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          cd canaries/npm/canary-anchor
+          cd canaries/npm/yearly
           npm ci
           npm publish --access public
 
-      - name: Create immutable Git tag for anchor
+      - name: Create immutable Git tag for yearly
         env:
           VERSION: ${{ steps.npm_version.outputs.npm_version }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           
-          TAG="canary-anchor@${VERSION}"
-          git tag -a "${TAG}" -m "Published canary-anchor v${VERSION} (one-time, control package)" HEAD
+          TAG="yearly@${VERSION}"
+          git tag -a "${TAG}" -m "Published yearly v${VERSION} (yearly control package)" HEAD
           git push origin "${TAG}"
           
           echo "✓ Tagged commit as ${TAG}"
@@ -127,21 +128,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: canary-anchor@${{ steps.npm_version.outputs.npm_version }}
-          release_name: Canary Anchor ${{ steps.npm_version.outputs.npm_version }} (Control, One-Time)
+          tag_name: yearly@${{ steps.npm_version.outputs.npm_version }}
+          release_name: Yearly ${{ steps.npm_version.outputs.npm_version }} (Annual Control)
           body: |
-            **⚠️ CONTROL CANARY (One-Time Release, Never to be Republished)**
+            **⚠️ YEARLY CONTROL PACKAGE (Annual Release, Do Not Republish Within Year)**
             
-            This is the anchor control package. It must never be republished or modified.
+            This is the yearly control package. It must not be republished until the next year.
             
-            - PyPI: `sbombs-canary-anchor==${{ steps.npm_version.outputs.npm_version }}`
-            - npm: `@sbombs/canary-anchor@${{ steps.npm_version.outputs.npm_version }}`
+            - PyPI: `sbombs-yearly==${{ steps.npm_version.outputs.npm_version }}`
+            - npm: `@sbombs/yearly@${{ steps.npm_version.outputs.npm_version }}`
             
             Commit: ${{ github.sha }}
             
             To verify the source code for this release:
             ```bash
-            git show canary-anchor@${{ steps.npm_version.outputs.npm_version }}
+            git show yearly@${{ steps.npm_version.outputs.npm_version }}
             ```
           draft: false
           prerelease: false

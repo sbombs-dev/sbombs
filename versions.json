@@ -1,46 +1,46 @@
 {
-  "description": "Published versions of SBOMBS canary packages. Updated by CI after successful publishes. Not the source of truth; Git tags are primary.",
+  "description": "Published versions of SBOMBS packages. Updated by CI after successful publishes. Not the source of truth; Git tags are primary.",
   "last_updated": "2026-09-29T00:00:00Z",
-  "canary_nightly": {
+  "daily": {
     "pypi": {
-      "package": "sbombs-canary-nightly",
-      "registry": "https://pypi.org/project/sbombs-canary-nightly",
+      "package": "sbombs-daily",
+      "registry": "https://pypi.org/project/sbombs-daily",
       "latest_version": null,
       "latest_published_date": null,
       "git_tag": null,
       "description": "Published daily at 06:00 UTC. Version format: YYYY.M.D (UTC date)."
     },
     "npm": {
-      "package": "@sbombs/canary-nightly",
-      "registry": "https://www.npmjs.com/package/@sbombs/canary-nightly",
+      "package": "@sbombs/daily",
+      "registry": "https://www.npmjs.com/package/@sbombs/daily",
       "latest_version": null,
       "latest_published_date": null,
       "git_tag": null,
       "description": "Published daily at 06:00 UTC. Version format: YYYY.M.D (UTC date)."
     }
   },
-  "canary_anchor": {
+  "yearly": {
     "pypi": {
-      "package": "sbombs-canary-anchor",
-      "registry": "https://pypi.org/project/sbombs-canary-anchor",
+      "package": "sbombs-yearly",
+      "registry": "https://pypi.org/project/sbombs-yearly",
       "version": null,
       "published_date": null,
       "git_tag": null,
-      "description": "Published once and never again. Control package for baseline testing."
+      "description": "Published once per year. Semantic versioning (YYYY.M.0). Control package for baseline testing."
     },
     "npm": {
-      "package": "@sbombs/canary-anchor",
-      "registry": "https://www.npmjs.com/package/@sbombs/canary-anchor",
+      "package": "@sbombs/yearly",
+      "registry": "https://www.npmjs.com/package/@sbombs/yearly",
       "version": null,
       "published_date": null,
       "git_tag": null,
-      "description": "Published once and never again. Control package for baseline testing."
+      "description": "Published once per year. Semantic versioning (YYYY.M.0). Control package for baseline testing."
     }
   },
   "notes": [
     "This file is informational only and maintained by CI workflows.",
     "It is NOT used by CI to determine versions; CI computes versions independently.",
     "To query actual published versions, use the package registries directly.",
-    "To audit which code was published, use Git tags: git tag -l 'canary-*'"
+    "To audit which code was published, use Git tags: git tag -l 'daily@*' or git tag -l 'yearly@*'"
   ]
 }

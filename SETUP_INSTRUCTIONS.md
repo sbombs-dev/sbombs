@@ -81,11 +81,11 @@ git push origin test-push:main  # Should be rejected
 5. Fill in fields:
    - **GitHub repository owner:** `YOUR-ORG` (or `YOUR-USERNAME` for personal)
    - **Repository name:** `sbombs.packages`
-   - **Workflow filename:** `.github/workflows/canary-nightly.yml` (or `canary-anchor.yml` for anchor)
+   - **Workflow filename:** `.github/workflows/daily.yml` (or `yearly.yml` for anchor)
    - **Environment name:** (leave blank for now)
 
 6. Click **Add trusted publisher**
-7. **Repeat for `canary-anchor.yml` workflow** and each package name
+7. **Repeat for `yearly.yml` workflow** and each package name
 
 ### Verify PyPI Configuration:
 
@@ -174,7 +174,7 @@ npm config delete //registry.npmjs.org/:_authToken
 
 1. Go to **Settings** → **Environments**
 2. Click **New environment**
-3. Name: `production` (or `canary-anchor` for anchor-specific)
+3. Name: `production` (or `yearly` for anchor-specific)
 4. Configure deployment branches:
    - **Deployment branches:** `main`
 5. Under "Required reviewers": Add 2-3 maintainers
@@ -182,12 +182,12 @@ npm config delete //registry.npmjs.org/:_authToken
 
 ### Update Workflow:
 
-In `.github/workflows/canary-anchor.yml`, add to the `publish-anchor` job:
+In `.github/workflows/yearly.yml`, add to the `publish-anchor` job:
 
 ```yaml
 environment:
-  name: canary-anchor
-  url: https://pypi.org/project/sbombs-canary-anchor
+  name: yearly
+  url: https://pypi.org/project/sbombs-yearly
 ```
 
 This requires manual approval before anchor publishing.
@@ -226,9 +226,9 @@ act schedule -j publish-nightly
 After workflow completes:
 
 1. Check GitHub **Releases** page for new release entry
-2. Verify Git tag: `git tag -l "canary-nightly@*"`
-3. Check PyPI: https://pypi.org/project/sbombs-canary-nightly/ (may take 5-10 min)
-4. Check npm: https://www.npmjs.com/package/@sbombs/canary-nightly (may take 5-10 min)
+2. Verify Git tag: `git tag -l "daily@*"`
+3. Check PyPI: https://pypi.org/project/sbombs-daily/ (may take 5-10 min)
+4. Check npm: https://www.npmjs.com/package/@sbombs/daily (may take 5-10 min)
 
 ---
 
@@ -238,7 +238,7 @@ After workflow completes:
 
 ### Steps:
 
-The workflow is already configured in `.github/workflows/canary-nightly.yml`:
+The workflow is already configured in `.github/workflows/daily.yml`:
 
 ```yaml
 on:
@@ -264,7 +264,7 @@ GitHub automatically enables cron schedules once the workflow is in the default 
 ### Steps:
 
 1. Create a test branch: `git checkout -b test/anchor-workflow`
-2. (Optional) Update `.github/workflows/canary-anchor.yml` to publish to **test registries** instead:
+2. (Optional) Update `.github/workflows/yearly.yml` to publish to **test registries** instead:
    - PyPI: https://test.pypi.org/
    - npm: Use Verdaccio or local registry
 
@@ -275,7 +275,7 @@ GitHub automatically enables cron schedules once the workflow is in the default 
    - Watch the job
 
 4. Verify anchor was published to test registries:
-   - PyPI: https://test.pypi.org/project/sbombs-canary-anchor/
+   - PyPI: https://test.pypi.org/project/sbombs-yearly/
    - npm: Check Verdaccio console
 
 5. **Do NOT merge this test branch to `main`**. Instead, **revert** the registry URLs back to production.
@@ -285,7 +285,7 @@ GitHub automatically enables cron schedules once the workflow is in the default 
 ### Important:
 
 - **After the first merge to main, do not run the anchor workflow again** (it's one-time only)
-- The workflow explicitly prevents re-publishing (checks for existing `canary-anchor@*` tags)
+- The workflow explicitly prevents re-publishing (checks for existing `yearly@*` tags)
 
 ---
 
@@ -306,11 +306,11 @@ Example:
 ```markdown
 ## Emergency: Need to republish a version
 
-**For canary-nightly (daily):**
+**For daily (daily):**
 - Cannot republish same version (each day has one version)
 - Wait for next day or manually trigger with `workflow_dispatch`
 
-**For canary-anchor (one-time):**
+**For yearly (one-time):**
 - Do NOT republish
 - If there's an issue with the published version, it's permanent
 - Document the issue and plan a new major version for the next anchor
@@ -349,7 +349,7 @@ Before going live, verify all components:
 
 - [ ] GitHub team `@sbombs/maintainers` created and populated
 - [ ] Branch protection rules enabled on `main`
-- [ ] Code owner approval required for canary-anchor paths
+- [ ] Code owner approval required for yearly paths
 - [ ] PyPI OIDC trusted publishers configured (or token in secrets)
 - [ ] npm automation token in GitHub secrets (or OIDC configured)
 - [ ] Workflow permissions set to "Read and write"
@@ -383,7 +383,7 @@ permissions:
 **Fix:**
 1. Verify `NPM_TOKEN` is set in GitHub secrets
 2. Verify npm organization (`@sbombs`) exists and token has access
-3. Verify `package.json` has correct `name`: `"@sbombs/canary-nightly"`
+3. Verify `package.json` has correct `name`: `"@sbombs/daily"`
 
 ### Issue: "Git tag already exists"
 
@@ -392,8 +392,8 @@ permissions:
 - For anchor: DO NOT re-run; one-time publish only
 - To force delete a tag (use with extreme caution):
   ```bash
-  git tag -d canary-nightly@YYYY.M.D
-  git push origin :refs/tags/canary-nightly@YYYY.M.D
+  git tag -d daily@YYYY.M.D
+  git push origin :refs/tags/daily@YYYY.M.D
   ```
 
 ### Issue: "Workflow 'workflow_dispatch' not available"

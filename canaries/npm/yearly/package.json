@@ -1,7 +1,7 @@
 {
-  "name": "@sbombs/canary-anchor",
-  "version": "0.0.0",
-  "description": "SBOMBS control test fixture, published once and never again. Do not depend on this package.",
+  "name": "@sbombs/yearly",
+  "version": "2026.1.0",
+  "description": "SBOMBS yearly control test fixture, published once per year. Do not depend on this package.",
   "license": "MIT",
   "private": false,
   "main": "index.js",

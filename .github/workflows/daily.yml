@@ -1,6 +1,6 @@
-name: Publish Canary Nightly
+name: Publish Daily
 
-# Publish nightly canaries to PyPI and npm at 06:00 UTC daily.
+# Publish daily canaries to PyPI and npm at 06:00 UTC daily.
 # Versions are computed as YYYY.M.D in UTC (e.g., 2026.9.29).
 # After successful publish, a Git tag is created pointing to the exact commit.
 # No version files are modified in source; versioning is purely CI-driven.
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  publish-nightly:
+  publish-daily:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # For creating and pushing Git tags
@@ -34,19 +34,19 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Compute nightly version (UTC date)
+      - name: Compute daily version (UTC date)
         id: version
         run: |
           export TZ=UTC
           VERSION=$(date -u +'%Y.%-m.%-d')
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Nightly version: ${VERSION}"
+          echo "Daily version: ${VERSION}"
 
-      - name: Build and publish sbombs-canary-nightly to PyPI
+      - name: Build and publish sbombs-daily to PyPI
         env:
           PUBLISH_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cd canaries/pypi/sbombs-canary-nightly
+          cd canaries/pypi/sbombs-daily
           
           # Install build tools
           pip install build twine
@@ -63,18 +63,18 @@ jobs:
           # Publish to PyPI using OIDC trusted publishing
           # The 'pypa/gh-action-pypi-publish' action handles the OIDC token exchange
           
-      - name: Publish sbombs-canary-nightly to PyPI
+      - name: Publish sbombs-daily to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: canaries/pypi/sbombs-canary-nightly/dist/
+          packages-dir: canaries/pypi/sbombs-daily/dist/
           repository-url: https://upload.pypi.org/legacy/
 
-      - name: Build and publish @sbombs/canary-nightly to npm
+      - name: Build and publish @sbombs/daily to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PUBLISH_VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cd canaries/npm/canary-nightly
+          cd canaries/npm/daily
           
           # Set up npm for OIDC (if using npm's native OIDC support)
           # Otherwise, ensure NPM_TOKEN is set in GitHub secrets
@@ -83,15 +83,15 @@ jobs:
           # Publish to npm
           npm publish --access public
 
-      - name: Create Git tag for nightly release
+      - name: Create Git tag for daily release
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           
-          TAG="canary-nightly@${VERSION}"
-          git tag -a "${TAG}" -m "Published canary-nightly v${VERSION}" HEAD
+          TAG="daily@${VERSION}"
+          git tag -a "${TAG}" -m "Published daily v${VERSION}" HEAD
           git push origin "${TAG}"
           
           echo "✓ Tagged commit as ${TAG}"
@@ -102,19 +102,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: canary-nightly@${{ steps.version.outputs.version }}
-          release_name: Canary Nightly ${{ steps.version.outputs.version }}
+          tag_name: daily@${{ steps.version.outputs.version }}
+          release_name: Daily ${{ steps.version.outputs.version }}
           body: |
-            **Nightly canary packages published**
+            **Daily packages published**
             
-            - PyPI: `sbombs-canary-nightly==${{ steps.version.outputs.version }}`
-            - npm: `@sbombs/canary-nightly@${{ steps.version.outputs.version }}`
+            - PyPI: `sbombs-daily==${{ steps.version.outputs.version }}`
+            - npm: `@sbombs/daily@${{ steps.version.outputs.version }}`
             
             Commit: ${{ github.sha }}
             
             To verify the source code for this release:
             ```bash
-            git show canary-nightly@${{ steps.version.outputs.version }}
+            git show daily@${{ steps.version.outputs.version }}
             ```
           draft: false
           prerelease: false

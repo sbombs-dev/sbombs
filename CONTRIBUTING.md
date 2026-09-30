@@ -39,25 +39,29 @@ Canary packages are **test fixtures** for supply chain policy testing. They must
 
 **Why?** Canary packages are **published to public registries** (PyPI, npm). Any active code runs in users' environments during installation, which defeats the purpose of testing passive policies. Keeping them inert ensures we're testing the *policy behavior*, not package behavior.
 
-### Anchor Package Warning
+### Yearly Package Warning
 
-Files in `canaries/npm/canary-anchor/` and `canaries/pypi/sbombs-canary-anchor/` are **immutable** after publication. 
+Files in `canaries/npm/yearly/` and `canaries/pypi/sbombs-yearly/` are **immutable** after publication. 
 
 - **Never** modify these packages for production
-- **Never** republish an anchor version
+- Never republish a yearly version
 - If you must make changes for testing, create a **separate test branch** and do not merge to `main`
 - GitHub branch protection rules require maintainer approval for any edits
 
-### Version Control for Canary Packages
+### Version Control for Packages
 
-**All package versions are computed at CI runtime, not in source code.**
+**Version management varies by package type:**
 
-- Canary package `package.json` and `pyproject.toml` files contain `version = "0.0.0"` (placeholder)
-- CI workflows compute real versions:
-  - **Nightly:** `date -u +'%Y.%-m.%-d'` (UTC date, e.g., `2026.9.29`)
-  - **Anchor:** Fixed version stored in config (e.g., `1.0.0`)
-- After successful publish, CI creates a Git tag: `canary-nightly@YYYY.M.D` or `canary-anchor@<version>`
-- Git tags serve as the audit trail
+**Daily packages** (`sbombs-daily`/`@sbombs/daily`):
+- `package.json` and `pyproject.toml` contain `version = "0.0.0"` (placeholder)
+- CI computes real version at publish time: `date -u +'%Y.%-m.%-d'` (UTC date, e.g., `2026.9.29`)
+- After successful publish, CI creates a Git tag: `daily@YYYY.M.D`
+
+**Yearly packages** (`sbombs-yearly`/`@sbombs/yearly`):
+- `package.json` and `pyproject.toml` contain semantic version (e.g., `2026.1.0`)
+- Version is **not** computed; it must be manually updated before publishing
+- After successful publish, CI creates a Git tag: `yearly@YYYY.M.0`
+- Git tags serve as the audit trail for all packages
 
 **Do not:**
 - Manually edit package version fields before publishing (CI will override)
@@ -68,29 +72,29 @@ See [VERSION_CONTROL.md](./VERSION_CONTROL.md) for details.
 
 ### Continuous Integration & Workflows
 
-#### Canary Nightly Workflow
+#### Daily Workflow
 
-- **File:** `.github/workflows/canary-nightly.yml`
+- **File:** `.github/workflows/daily.yml`
 - **Trigger:** Scheduled daily at 06:00 UTC
-- **Publishes:** `sbombs-canary-nightly` (PyPI) and `@sbombs/canary-nightly` (npm)
+- **Publishes:** `sbombs-daily` (PyPI) and `@sbombs/daily` (npm)
 - **Version:** Computed as UTC date (e.g., `2026.9.29`)
-- **Git tag:** `canary-nightly@<date>`
+- **Git tag:** `daily@<date>`
 
-#### Canary Anchor Workflow
+#### Yearly Workflow
 
-- **File:** `.github/workflows/canary-anchor.yml`
-- **Trigger:** Manual dispatch only (with maintainer approval)
-- **Publishes:** `sbombs-canary-anchor` (PyPI) and `@sbombs/canary-anchor` (npm)
-- **Git tag:** `canary-anchor@<version>`
-- **Note:** After first successful publish, **do not run this workflow again**
+- **File:** `.github/workflows/yearly.yml`
+- **Trigger:** Manual dispatch only (with maintainer confirmation)
+- **Publishes:** `sbombs-yearly` (PyPI) and `@sbombs/yearly` (npm)
+- **Git tag:** `yearly@<version>`
+- **Note:** Maintainer must confirm publish and verify version matches between PyPI and npm. After each year's release, do not re-run until next year's version is ready.
 
 ### Code Review Checklist
 
 When reviewing pull requests, check:
 
 - [ ] **Inertness:** No install scripts, runtime deps, network calls, or file writes
-- [ ] **Version unchanged:** Canary configs still have `0.0.0`; anchor version matches across npm and PyPI
-- [ ] **Anchor safety:** If editing `canary-anchor/*`, is there a documented reason? (Usually shouldn't happen post-publish)
+- [ ] **Version consistency:** Daily configs have `0.0.0`; yearly version matches across npm and PyPI
+- [ ] **Yearly safety:** If editing `yearly/*`, is there a documented reason? (Usually shouldn't happen post-publish)
 - [ ] **Documentation:** Changes to canary packages or CI workflows are documented
 
 ## Proposing New Canary Packages
@@ -101,7 +105,8 @@ For new policy dimensions (e.g., license-based testing, malicious package detect
 2. **Design** the new canary package(s) under `canaries/pypi/` or `canaries/npm/`
 3. **Ensure inertness:** No install scripts, runtime deps, or active behavior
 4. **Document** the new canary in `README.md` and `agents.md`
-5. **Plan release schedule:** How often will it be published?
+- **Plan release schedule:** How often will it be published? (Daily, weekly, once per year, etc.)
+- **Follow naming convention:** PyPI uses `sbombs-[dimension]`, npm uses `@sbombs/[dimension]`
 
 ## Security Issues
 
@@ -113,27 +118,31 @@ For security vulnerabilities in the canary packages or publishing infrastructure
 
 ## Local Verification
 
-### Testing Canary Package Inertness
+### Testing Package Inertness
 
-For npm packages:
+For npm packages (daily):
 ```bash
-cd canaries/npm/canary-nightly
+cd canaries/npm/daily
 npm install  # Should install quickly with no side effects
 npm list     # Should show only the package itself, no dependencies
 ```
 
-For Python packages:
+For Python packages (daily):
 ```bash
-cd canaries/pypi/sbombs-canary-nightly
+cd canaries/pypi/sbombs-daily
 pip install .  # Should install instantly with no dependencies
-python -c "import sbombs_canary_nightly"  # Should work
+python -c "import sbombs_daily"  # Should work
+python -c "from sbombs_daily import *; print('Inert - no runtime behavior')"
 ```
 
-For PyPI packages:
+For yearly packages:
 ```bash
-cd canaries/pypi/sbombs-canary-nightly
-pip install -e .  # Should install quickly with no side effects
-python -c "from sbombs_canary_nightly import *; print('Inert - no runtime behavior')"
+cd canaries/npm/yearly
+npm install  # Should install quickly with no side effects
+
+cd canaries/pypi/sbombs-yearly
+pip install .  # Should install instantly with no dependencies
+python -c "import sbombs_yearly"  # Should work
 ```
 
 ### Manual Publishing (Testing Only)
@@ -141,15 +150,15 @@ python -c "from sbombs_canary_nightly import *; print('Inert - no runtime behavi
 **Do NOT publish to production registries manually.** For local testing:
 
 ```bash
-# Test against PyPI's test registry
-cd canaries/pypi/sbombs-canary-nightly
+# Test against PyPI's test registry (daily package)
+cd canaries/pypi/sbombs-daily
 pip install build twine
 python -m build
 twine upload --repository testpypi dist/*
 
 # Test against a local npm registry (e.g., Verdaccio)
 # See https://verdaccio.org/ for setup
-cd canaries/npm/canary-nightly
+cd canaries/npm/daily
 npm publish --registry http://localhost:4873
 ```
 

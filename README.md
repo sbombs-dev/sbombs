@@ -12,15 +12,16 @@ Full project context, rules, and repository layout are documented in
 ## Status
 
 - ✅ Version control strategy implemented (see [`VERSION_CONTROL.md`](./VERSION_CONTROL.md))
-- ✅ Canary package structure set up
-- ✅ CI workflows scaffolded (canary-nightly, canary-anchor)
+- ✅ Modular package structure set up (yearly + daily)
+- ✅ CI workflows scaffolded (daily, yearly)
+- ✅ Future-ready for additional dimensions (eicar, license types, etc.)
 
 ## Layout
 
 - `canaries/` - inert test-fixture packages (PyPI and npm)
-  - `pypi/` - Python packages (sbombs-canary-nightly, sbombs-canary-anchor)
-  - `npm/` - npm packages (@sbombs/canary-nightly, @sbombs/canary-anchor)
-- `.github/workflows/` - CI/CD for publishing canaries
+  - `pypi/` - Python packages (sbombs-daily, sbombs-yearly)
+  - `npm/` - npm packages (@sbombs/daily, @sbombs/yearly)
+- `.github/workflows/` - CI/CD for publishing packages (daily.yml, yearly.yml)
 
 ## Key Documentation
 
@@ -28,28 +29,31 @@ Full project context, rules, and repository layout are documented in
 - **[`VERSION_CONTROL.md`](./VERSION_CONTROL.md)** — How canary versions are managed and tracked in Git.
 - **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** — Development guidelines, code review checklist, and testing procedures.
 
-## Canary Packages
+## Packages
 
-SBOMBS publishes two types of canaries to each registry:
+SBOMBS publishes modular test-fixture packages to each registry. Current dimensions:
 
-- **`canary-nightly`** (PyPI: `sbombs-canary-nightly`, npm: `@sbombs/canary-nightly`)
+- **`sbombs-daily`** (PyPI) / `@sbombs/daily` (npm)
   - Published daily at 06:00 UTC with version `YYYY.M.D` (e.g., `2026.9.29`)
   - Provides a version of every age for testing immaturity/release-date policies
+  - Use to validate any age-based threshold (2 days, 14 days, 30 days, custom)
   
-- **`canary-anchor`** (PyPI: `sbombs-canary-anchor`, npm: `@sbombs/canary-anchor`)
-  - Published once, never updated — serves as a control
+- **`sbombs-yearly`** (PyPI) / `@sbombs/yearly` (npm)
+  - Published once per year with semantic version `YYYY.M.0` (e.g., `2026.1.0`)
+  - Serves as an immutable control/baseline for validating test setup
   - Always old enough to pass age-based policies
-  - Validates that the test setup is correct
 
-All canaries are inert: no install scripts, no network calls, no dependencies.
+All packages are inert: no install scripts, no network calls, no dependencies.
 
-## Using the Canaries
+**Future dimensions** (planned): `sbombs-eicar` (Phase 2), `sbombs-mit`, `sbombs-agpl`, etc.
+
+## Using the Packages
 
 Use these packages to test your own supply chain policies. Example scenarios:
 
-- **Test release-date (immaturity) rules**: Request `canary-nightly` versions of different ages
-- **Test pending behavior**: Request today's `canary-nightly` version (0 hours old)
-- **Validate your test setup**: Request `canary-anchor` — it should always pass age-based policies
+- **Test release-date (immaturity) rules**: Request `sbombs-daily` versions of different ages (e.g., `2026.9.15`, `2026.9.10`)
+- **Test pending behavior**: Request today's `sbombs-daily` version (0 hours old)
+- **Validate your test setup**: Request `sbombs-yearly` — it should always pass age-based policies; if blocked, your setup needs adjustment
 
 ## Development
 
@@ -58,9 +62,13 @@ Set up environment:
 ```sh
 ./setup-dev-env.sh
 
-# For Node.js canary package testing
-cd canaries/npm/canary-nightly
+# For Node.js package testing
+cd canaries/npm/daily
 npm install
+
+# For Python package testing
+cd canaries/pypi/sbombs-daily
+python -m build
 ```
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for more details.

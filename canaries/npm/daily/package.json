@@ -1,7 +1,7 @@
 {
-  "name": "@sbombs/canary-nightly",
+  "name": "@sbombs/daily",
   "version": "0.0.0",
-  "description": "SBOMBS test fixture, published nightly. Do not depend on this package.",
+  "description": "SBOMBS test fixture, published daily. Do not depend on this package.",
   "license": "MIT",
   "private": false,
   "main": "index.js",

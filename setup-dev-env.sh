@@ -32,8 +32,8 @@ fi
 
 # Install Node.js dev dependencies (optional)
 if command -v npm &> /dev/null; then
-    echo "📦 Installing Node.js dev dependencies for canaries..."
-    for pkg in canaries/npm/canary-nightly canaries/npm/canary-anchor; do
+    echo "📦 Installing Node.js dev dependencies for packages..."
+    for pkg in canaries/npm/daily canaries/npm/yearly; do
         if [[ -d "$REPO_ROOT/$pkg" ]]; then
             (cd "$pkg" && npm ci --silent) || echo "⚠️  Could not install npm deps for $pkg"
         fi

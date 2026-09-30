@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+uv.lock.bak
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.code-workspace
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# Local task tracking
+/todo.md

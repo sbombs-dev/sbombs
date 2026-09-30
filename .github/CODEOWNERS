@@ -4,4 +4,4 @@
 # This is used by GitHub branch protection rules to enforce approval requirements.
 
 # Require approval from owners for all changes
-*                                    @sbombs-dev//sbombs-owner
+*                                    @sbombs-dev/sbombs-owner

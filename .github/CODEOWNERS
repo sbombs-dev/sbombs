@@ -1,0 +1,7 @@
+# CODEOWNERS file for SBOMBS canary packages and runner.
+# Designates code owners who must approve all changes to the repository.
+#
+# This is used by GitHub branch protection rules to enforce approval requirements.
+
+# Require approval from owners for all changes
+*                                    @sbombs-dev/owner

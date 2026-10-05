@@ -34,3 +34,8 @@ Thumbs.db
 
 # Local task tracking
 /todo.md
+
+# Copilot prompts
+.github/prompts
+.github/instructions
+.github/copilot-instructions.md

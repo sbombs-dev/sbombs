@@ -162,6 +162,22 @@ cd canaries/npm/daily
 npm publish --registry http://localhost:4873
 ```
 
+## Copilot Prompts & Instructions
+
+Reusable GitHub Copilot prompts live in [`.github/prompts/`](./.github/prompts/). In VS Code Copilot Chat, run them by typing `/` followed by the prompt name:
+
+| Prompt | Purpose |
+|---|---|
+| `/review-canary-pr` | Review a branch or PR against the code review checklist and critical rules |
+| `/new-canary-dimension` | Scaffold an inert `sbombs-[dimension]` / `@sbombs/[dimension]` pair and update the docs |
+| `/verify-inertness` | Run static checks and isolated install checks on canary packages |
+| `/audit-published-version` | Compare a `daily@…` / `yearly@…` tag with the registry artifacts (read-only) |
+| `/prepare-yearly-release` | Bump both yearly manifests for a new year on a branch (never republishes) |
+| `/troubleshoot-workflow` | Diagnose a failed daily or yearly publish run |
+| `/commit-message` | Draft a commit message for staged changes that follows the guidelines below |
+
+Copilot also applies the rules in [`.github/instructions/`](./.github/instructions/) automatically when editing matching files: `canaries.instructions.md` for `canaries/**` and `workflows.instructions.md` for `.github/workflows/**`. Repository-wide agent rules stay in [agents.md](./agents.md).
+
 ## Commit Message Guidelines
 
 - Use present tense: "Add feature" not "Added feature"

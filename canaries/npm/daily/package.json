@@ -1,6 +1,6 @@
 {
   "name": "@sbombs/daily",
-  "version": "0.0.0",
+  "version": "2026.10.5",
   "description": "SBOMBS test fixture, published daily. Do not depend on this package.",
   "license": "MIT",
   "private": false,

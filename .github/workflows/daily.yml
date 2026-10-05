@@ -43,26 +43,30 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Daily version: ${VERSION}"
 
-      - name: Build and publish sbombs-daily to PyPI
+      - name: Build sbombs-daily for PyPI
         env:
           PUBLISH_VERSION: ${{ steps.version.outputs.version }}
         run: |
           cd canaries/pypi/sbombs-daily
           
           # Install build tools
-          pip install build twine
+          pip install build
+          
+          # Update version in pyproject.toml (0.0.0 → YYYY.M.D)
+          sed -i 's/^version = "0.0.0"$/version = "'${PUBLISH_VERSION}'"/' pyproject.toml
+          
+          # Update version in __init__.py (0.0.0 → YYYY.M.D)
+          sed -i 's/^__version__ = "0.0.0"$/__version__ = "'${PUBLISH_VERSION}'"/' src/sbombs_daily/__init__.py
+          
+          # Verify the version updates
+          grep '^version = ' pyproject.toml
+          grep '^__version__ = ' src/sbombs_daily/__init__.py
           
           # Build the distribution (wheel + sdist)
-          # Hatchling will pick up version from pyproject.toml (0.0.0),
-          # but we can override via environment or post-build patching.
-          # For now, we rely on the build step; advanced versioning can be added later.
           python -m build
           
           # Verify the built packages
           ls -lh dist/
-          
-          # Publish to PyPI using OIDC trusted publishing
-          # The 'pypa/gh-action-pypi-publish' action handles the OIDC token exchange
           
       - name: Publish sbombs-daily to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

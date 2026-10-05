@@ -1,0 +1,12 @@
+{
+  "name": "@sbombs/yearly",
+  "version": "2026.1.0",
+  "description": "SBOMBS yearly control test fixture, published once per year. Do not depend on this package.",
+  "license": "MIT",
+  "private": false,
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ]
+}

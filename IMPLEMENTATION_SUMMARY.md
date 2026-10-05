@@ -1,41 +1,53 @@
-# Version Control Implementation Summary
+# Package Deployment & Version Control Implementation Summary
 
 **Date:** September 29, 2026  
-**Status:** ✅ Complete
+**Status:** ✅ Complete (Modular Package Naming & Versioning)
 
-This document summarizes the version control strategy implementation for SBOMBS canary package deployments.
+This document summarizes the modular package structure and version control strategy for SBOMBS packages.
 
 ## What Was Implemented
 
-### 1. CI/CD Workflows (`.github/workflows/`)
+### 1. Modular Package Structure
 
-#### `canary-nightly.yml` ✅
+**Daily Package** (`sbombs-daily` / `@sbombs/daily`)
+- Published daily at 06:00 UTC
+- Version: `YYYY.M.D` (e.g., `2026.9.29`)
+- Purpose: Provides versions of every age for testing immaturity policies
+
+**Yearly Package** (`sbombs-yearly` / `@sbombs/yearly`)
+- Published once per year (manual dispatch)
+- Version: `YYYY.M.0` (e.g., `2026.1.0`)
+- Purpose: Immutable control baseline for validating test setup
+
+### 2. CI/CD Workflows (`.github/workflows/`)
+
+#### `daily.yml` ✅
 - **Trigger:** Daily schedule (06:00 UTC) + manual dispatch
 - **Functionality:**
   - Computes version as UTC date: `date -u +'%Y.%-m.%-d'` (e.g., `2026.9.29`)
-  - Builds and publishes `sbombs-canary-nightly` to PyPI
-  - Builds and publishes `@sbombs/canary-nightly` to npm
-  - Creates Git tag: `canary-nightly@YYYY.M.D`
+  - Builds and publishes `sbombs-daily` to PyPI
+  - Builds and publishes `@sbombs/daily` to npm
+  - Creates Git tag: `daily@YYYY.M.D`
   - Creates GitHub Release for visibility
 - **Security:** Uses OIDC trusted publishing (no long-lived tokens)
 
-#### `canary-anchor.yml` ✅
+#### `yearly.yml` ✅
 - **Trigger:** Manual dispatch only (with safety checks)
 - **Functionality:**
-  - Verifies anchor hasn't been published before
-  - Requires explicit `confirm_anchor="yes"` confirmation
+  - Verifies yearly version hasn't been published before
+  - Requires explicit `confirm_yearly="yes"` confirmation
   - Validates npm and PyPI versions match
   - Builds and publishes both packages
-  - Creates immutable Git tag: `canary-anchor@<version>`
-  - Creates GitHub Release (one-time record)
-- **Safety:** Workflow exits if anchor tag already exists (prevents re-publishing)
+  - Creates immutable Git tag: `yearly@YYYY.M.0`
+  - Creates GitHub Release (annual record)
+- **Safety:** Workflow exits if yearly version tag already exists (prevents re-publishing)
 
-### 2. Branch Protection (`CODEOWNERS`)
+### 3. Branch Protection (`CODEOWNERS`)
 
 **File:** `.github/CODEOWNERS`  
 **Protection Rules:**
-- Anchor packages (`canaries/npm/canary-anchor/`, `canaries/pypi/sbombs-canary-anchor/`) → Requires `@sbombs/maintainers` approval
-- Nightly packages (recommended for maintainer review)
+- Yearly packages (`canaries/npm/yearly/`, `canaries/pypi/sbombs-yearly/`) → Requires `@sbombs/maintainers` approval
+- Daily packages (recommended for maintainer review)
 - CI/CD workflows (`.github/workflows/`) → Requires maintainer approval
 
 **How to enforce in GitHub:**
@@ -47,31 +59,40 @@ This document summarizes the version control strategy implementation for SBOMBS 
 6. Enable "Dismiss stale pull request approvals when new commits are pushed"
 7. Save
 
-### 3. Documentation
+### 4. Documentation
 
 #### `VERSION_CONTROL.md` ✅
 **Comprehensive guide covering:**
-- Versioning scheme (date-based for nightly, fixed for anchor)
+- Versioning schemes: date-based for daily, semantic for yearly
 - Git tagging strategy and naming conventions
 - Branch protection and immutability enforcement
-- CI workflow details
-- Timezone considerations
+- Daily vs. yearly CI workflow details
+- Timezone considerations (UTC)
 - Auditing and forensics examples
 - Troubleshooting guide
 
+#### `agents.md` ✅
+**Updated with:**
+- New modular package naming convention
+- Repository layout for daily + yearly packages
+- Placeholder structure for Phase 2 (sbombs-eicar)
+- Future-ready guidance for license-based packages
+- Naming patterns for new dimensions
+
 #### `CONTRIBUTING.md` ✅
 **Development guidelines including:**
-- Canary package requirements (must remain inert)
-- Anchor package immutability warning
-- Version control specifics for developers
+- Package inertness requirements (no install scripts, runtime deps, etc.)
+- Yearly package immutability warning
+- Version control specifics for daily vs. yearly packages
 - Code review checklist
 - Local testing procedures
-- Commit message guidelines
+- New dimension proposal guidelines
 
 #### `README.md` (updated) ✅
-- Added links to version control documentation
-- Updated status section
-- Added quick start development instructions
+- Updated package names and descriptions
+- Added future-ready note about modular dimensions
+- Updated development examples
+- Updated package usage scenarios
 
 ### 4. Local Development Support
 
@@ -109,18 +130,18 @@ This document summarizes the version control strategy implementation for SBOMBS 
 
 Before going to production, complete these checks:
 
-- [ ] **Confirm `package.json` and `pyproject.toml` versions:** All canary configs have `version = "0.0.0"` (check: `grep -r '"version"' canaries/`)
-- [ ] **Test nightly workflow locally:** Use `act` to dry-run `.github/workflows/canary-nightly.yml`
+- [ ] **Confirm `package.json` and `pyproject.toml` versions:** All daily configs have `version = "0.0.0"`; yearly configs have semantic version (check: `grep -r '"version"' canaries/`)
+- [ ] **Test daily workflow locally:** Use `act` to dry-run `.github/workflows/daily.yml`
   ```bash
   brew install act  # or install via your package manager
-  act schedule --job publish-nightly  # Simulates scheduled run
+  act schedule --job publish-daily  # Simulates scheduled run
   ```
 - [ ] **Verify OIDC setup:** Confirm PyPI and npm have OIDC trusted publishing configured for this repo (see npm and PyPI docs)
-- [ ] **Test branch protection:** Create a test branch, edit `canaries/npm/canary-anchor/package.json`, open PR:
+- [ ] **Test branch protection:** Create a test branch, edit `canaries/npm/yearly/package.json`, open PR:
   - Verify GitHub prevents merge without approval from `@sbombs/maintainers`
   - Verify approval can be dismissed and re-requested
 - [ ] **Set up CODEOWNERS:** Ensure `@sbombs/maintainers` GitHub team exists and includes appropriate members
-- [ ] **Test anchor workflow:** Create a draft PR with anchor changes; ensure workflow won't block legitimate changes during testing
+- [ ] **Test yearly workflow:** Create a draft PR with yearly changes; ensure workflow won't block legitimate changes during testing
 - [ ] **Document secrets:** Add `NPM_TOKEN` (if not using OIDC) to GitHub repo secrets
 - [ ] **Create GitHub release environment:** Enable "Environments" in Settings for staged deployments (optional)
 - [ ] **Test Git tag cleanup:** Verify tag naming and that old tags don't interfere with new publishes
@@ -131,16 +152,26 @@ Before going to production, complete these checks:
 .github/
   CODEOWNERS                    ← Code owner assignments for branch protection
   workflows/
-    canary-nightly.yml          ← Daily publish + git tag
-    canary-anchor.yml           ← Manual one-time publish + git tag
+    daily.yml                   ← Daily publish workflow + git tag
+    yearly.yml                  ← Manual annual publish + git tag + confirmation
 .git-hooks/
   pre-commit                    ← Local warning hook (optional)
-VERSION_CONTROL.md              ← Comprehensive version control guide
+VERSION_CONTROL.md              ← Version control guide (daily + yearly)
+agents.md                       ← Updated with modular structure + Phase 2 placeholders
 CONTRIBUTING.md                 ← Development guidelines (updated)
-README.md                       ← Updated with links and quick start
+README.md                       ← Updated with new package names and structure
 setup-dev-env.sh                ← Developer environment setup script
 versions.json                   ← Audit log (informational, CI-maintained)
 IMPLEMENTATION_SUMMARY.md       ← This file
+canaries/
+  npm/
+    daily/                      ← sbombs-daily npm package
+    yearly/                     ← sbombs-yearly npm package
+    eicar/                      ← Phase 2 placeholder (not for production)
+  pypi/
+    sbombs-daily/              ← sbombs-daily PyPI package
+    sbombs-yearly/             ← sbombs-yearly PyPI package
+    sbombs-eicar/              ← Phase 2 placeholder (not for production)
 ```
 
 ## Next Steps
@@ -153,33 +184,41 @@ IMPLEMENTATION_SUMMARY.md       ← This file
    - npm: https://docs.npmjs.com/cli/v9/using-npm/security-best-practices#use-automation-tokens-for-automation
 3. **Set up branch protection rules** in GitHub (see "Verification Checklist" above)
 4. **Create `@sbombs/maintainers` GitHub team** (or adjust CODEOWNERS to match existing team)
-5. **Dry-run nightly workflow** against test registry before first production run
-6. **Dry-run anchor workflow** with confirmation dialogs enabled
+5. **Dry-run daily workflow** against test registry before first production run
+6. **Dry-run yearly workflow** with confirmation dialogs enabled
+7. **Update npm scope** (@sbombs) to use OIDC if not already configured
 
 ### For contributors:
 
 1. **Run `./setup-dev-env.sh`** to enable local Git hooks
-2. **Read `VERSION_CONTROL.md`** to understand the strategy
+2. **Read `VERSION_CONTROL.md`** to understand daily vs. yearly versioning
 3. **Read `CONTRIBUTING.md`** for development guidelines
-4. **See `agents.md`** for overall project rules
+4. **See `agents.md`** for project rules and modular structure
+5. **Learn naming convention** for adding new package dimensions
 
 ## Examples
 
 ### Example: Query published versions
 
 ```bash
-# List all published nightly versions
-git tag -l "canary-nightly@*" | sort -V
+# List all published daily versions
+git tag -l "daily@*" | sort -V
 
-# See what code was in a specific release
-git show canary-nightly@2026.9.25 --stat
+# List all published yearly versions
+git tag -l "yearly@*" | sort -V
+
+# See what code was in a specific daily release
+git show daily@2026.9.25 --stat
+
+# See what code was in a specific yearly release
+git show yearly@2026.1.0 --stat
 ```
 
 ### Example: Audit trail
 
 ```bash
-# "What code was published as canary-nightly@2026.9.29?"
-git show canary-nightly@2026.9.29
+# "What code was published as daily@2026.9.29?"
+git show daily@2026.9.29
 
 # "When was this commit published?"
 git tag --contains abc1234def56
@@ -192,10 +231,10 @@ git log --oneline --decorate --all --graph
 
 ```bash
 # Delete local tag
-git tag -d canary-nightly@2026.9.29
+git tag -d daily@2026.9.29
 
 # Delete remote tag (requires push rights; use with care)
-git push origin :refs/tags/canary-nightly@2026.9.29
+git push origin :refs/tags/daily@2026.9.29
 ```
 
 ## Questions & Troubleshooting
@@ -208,11 +247,11 @@ A: This shouldn't happen (versions are based on UTC date, one per day). If it do
   1. Re-ran the workflow on the same UTC day (just wait for tomorrow's run)
   2. Manually published (which violates the rules; see agents.md)
 
-**Q: Can I edit canary-anchor after publishing?**  
+**Q: Can I edit sbombs-yearly after publishing?**  
 A: Not in production. Branch protection rules prevent edits. If you must test changes:
   1. Create a feature branch
   2. Make changes
-  3. Do NOT merge to `main` (or test in a separate `test-anchor` branch)
+  3. Do NOT merge to `main` (or test in a separate `test-yearly` branch)
 
 **Q: How do I verify a published package matches the source?**  
 A: See "Auditing & Forensics" section in `VERSION_CONTROL.md` for detailed steps.

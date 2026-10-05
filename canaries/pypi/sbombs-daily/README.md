@@ -1,4 +1,4 @@
-# sbombs-canary-nightly
+# sbombs-daily
 
 Test fixture for supply-chain policy testing. Do not depend on this package.
 

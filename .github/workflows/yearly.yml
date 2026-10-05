@@ -118,31 +118,38 @@ jobs:
           git config user.name "github-actions[bot]"
           
           TAG="yearly@${VERSION}"
+          
+          # Yearly tags should not exist (verified in earlier job), but check anyway
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "❌ ERROR: Tag ${TAG} already exists! This should not happen."
+            exit 1
+          fi
+          
           git tag -a "${TAG}" -m "Published yearly v${VERSION} (yearly control package)" HEAD
           git push origin "${TAG}"
           
           echo "✓ Tagged commit as ${TAG}"
 
       - name: Create GitHub Release (immutable record)
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: yearly@${{ steps.npm_version.outputs.npm_version }}
-          release_name: Yearly ${{ steps.npm_version.outputs.npm_version }} (Annual Control)
-          body: |
-            **⚠️ YEARLY CONTROL PACKAGE (Annual Release, Do Not Republish Within Year)**
-            
-            This is the yearly control package. It must not be republished until the next year.
-            
-            - PyPI: `sbombs-yearly==${{ steps.npm_version.outputs.npm_version }}`
-            - npm: `@sbombs/yearly@${{ steps.npm_version.outputs.npm_version }}`
-            
-            Commit: ${{ github.sha }}
-            
-            To verify the source code for this release:
-            ```bash
-            git show yearly@${{ steps.npm_version.outputs.npm_version }}
-            ```
-          draft: false
-          prerelease: false
+          VERSION: ${{ steps.npm_version.outputs.npm_version }}
+        run: |
+          TAG="yearly@${VERSION}"
+          
+          # Create release (should not exist for yearly)
+          gh release create "${TAG}" \
+            --title "Yearly ${VERSION} (Annual Control)" \
+            --notes "**⚠️ YEARLY CONTROL PACKAGE (Annual Release, Do Not Republish Within Year)**
+
+          This is the yearly control package. It must not be republished until the next year.
+          
+          - PyPI: \`sbombs-yearly==${VERSION}\`
+          - npm: \`@sbombs/yearly@${VERSION}\`
+          
+          Commit: ${{ github.sha }}
+          
+          To verify the source code for this release:
+          \`\`\`bash
+          git show ${TAG}
+          \`\`\`"

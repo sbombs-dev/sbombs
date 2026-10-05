@@ -102,5 +102,6 @@ Not approved yet. If a maintainer explicitly asks for it:
   - Yearly packages (e.g., `sbombs-yearly`): follow `YYYY.M.0` semantic versioning
   - Other packages: use immutable semantic versioning (1.0.0, 2.0.0, etc.) or date-based as appropriate
 - **Never republish or deprecate**: old versions are test data and must remain available forever.
+- **Copilot outputs**: Save AI-generated markdown files (setup checklists, implementation summaries, troubleshooting notes) to `copilot-outputs/` — this directory is git-ignored and for local development only.
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for detailed development guidelines (maintainers only).

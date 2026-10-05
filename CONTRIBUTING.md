@@ -178,6 +178,36 @@ Reusable GitHub Copilot prompts live in [`.github/prompts/`](./.github/prompts/)
 
 Copilot also applies the rules in [`.github/instructions/`](./.github/instructions/) automatically when editing matching files: `canaries.instructions.md` for `canaries/**` and `workflows.instructions.md` for `.github/workflows/**`. Repository-wide agent rules stay in [agents.md](./agents.md).
 
+### Copilot Output Files
+
+When Copilot generates documentation, plans, summaries, or other markdown artifacts during development, save them to the `copilot-outputs/` directory:
+
+```bash
+# Example structure
+copilot-outputs/
+├── SETUP_CHECKLIST.md
+├── IMPLEMENTATION_SUMMARY.md
+├── PYPI_SETUP_SUMMARY.md
+└── NPM_SETUP_SUMMARY.md
+```
+
+**Important:**
+- All files in `copilot-outputs/` are **automatically ignored by git** (per `.gitignore`)
+- This directory is for **session artifacts and working notes**, not permanent documentation
+- Do not commit these files — they are local development aids only
+- Permanent documentation belongs in root-level `.md` files (e.g., `README.md`, `CONTRIBUTING.md`, `VERSION_CONTROL.md`)
+
+**When to use `copilot-outputs/`:**
+- Setup checklists and implementation summaries generated during development
+- Troubleshooting notes and debugging artifacts
+- Planning documents for experimental features
+- Any markdown output that doesn't belong in permanent project documentation
+
+**When NOT to use `copilot-outputs/`:**
+- Permanent project documentation (use root-level `.md` files)
+- Architecture decisions that should be tracked (document in `agents.md` or create ADRs)
+- User-facing documentation (update `README.md` or package READMEs)
+
 ## Commit Message Guidelines
 
 - Use present tense: "Add feature" not "Added feature"

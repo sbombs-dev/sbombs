@@ -13,9 +13,9 @@
     "npm": {
       "package": "@sbombs/daily",
       "registry": "https://www.npmjs.com/package/@sbombs/daily",
-      "latest_version": null,
-      "latest_published_date": null,
-      "git_tag": null,
+      "latest_version": "2026.10.5",
+      "latest_published_date": "2026-10-05T06:00:00Z",
+      "git_tag": "daily@2026.10.5",
       "description": "Published daily at 06:00 UTC. Version format: YYYY.M.D (UTC date)."
     }
   },
@@ -31,9 +31,9 @@
     "npm": {
       "package": "@sbombs/yearly",
       "registry": "https://www.npmjs.com/package/@sbombs/yearly",
-      "version": null,
-      "published_date": null,
-      "git_tag": null,
+      "version": "2026.1.0",
+      "published_date": "2026-10-05T06:00:00Z",
+      "git_tag": "yearly@2026.1.0",
       "description": "Published once per year. Semantic versioning (YYYY.M.0). Control package for baseline testing."
     }
   },

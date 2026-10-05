@@ -57,11 +57,9 @@ Use these packages to test your own supply chain policies. Example scenarios:
 
 ## Development
 
-Set up environment:
+Testing canary packages locally:
 
 ```sh
-./setup-dev-env.sh
-
 # For Node.js package testing
 cd canaries/npm/daily
 npm install

@@ -104,30 +104,40 @@ jobs:
           git config user.name "github-actions[bot]"
           
           TAG="daily@${VERSION}"
-          git tag -a "${TAG}" -m "Published daily v${VERSION}" HEAD
-          git push origin "${TAG}"
           
-          echo "✓ Tagged commit as ${TAG}"
+          # Check if tag already exists
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "⚠️  Tag ${TAG} already exists, skipping tag creation"
+          else
+            git tag -a "${TAG}" -m "Published daily v${VERSION}" HEAD
+            git push origin "${TAG}"
+            echo "✓ Tagged commit as ${TAG}"
+          fi
 
-      - name: Create GitHub Release (optional, for visibility)
-        uses: actions/create-release@v1
-        if: always()
+      - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: daily@${{ steps.version.outputs.version }}
-          release_name: Daily ${{ steps.version.outputs.version }}
-          body: |
-            **Daily packages published**
-            
-            - PyPI: `sbombs-daily==${{ steps.version.outputs.version }}`
-            - npm: `@sbombs/daily@${{ steps.version.outputs.version }}`
-            
-            Commit: ${{ github.sha }}
-            
-            To verify the source code for this release:
-            ```bash
-            git show daily@${{ steps.version.outputs.version }}
-            ```
-          draft: false
-          prerelease: false
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAG="daily@${VERSION}"
+          
+          # Check if release already exists
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "⚠️  Release ${TAG} already exists, skipping release creation"
+            exit 0
+          fi
+          
+          # Create release
+          gh release create "${TAG}" \
+            --title "Daily ${VERSION}" \
+            --notes "**Daily packages published**
+
+          - PyPI: \`sbombs-daily==${VERSION}\`
+          - npm: \`@sbombs/daily@${VERSION}\`
+          
+          Commit: ${{ github.sha }}
+          
+          To verify the source code for this release:
+          \`\`\`bash
+          git show ${TAG}
+          \`\`\`"

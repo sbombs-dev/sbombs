@@ -33,6 +33,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Compute daily version (UTC date)
         id: version
@@ -69,19 +70,27 @@ jobs:
           packages-dir: canaries/pypi/sbombs-daily/dist/
           repository-url: https://upload.pypi.org/legacy/
 
-      - name: Build and publish @sbombs/daily to npm
+      - name: Update @sbombs/daily version
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PUBLISH_VERSION: ${{ steps.version.outputs.version }}
         run: |
           cd canaries/npm/daily
           
-          # Set up npm for OIDC (if using npm's native OIDC support)
-          # Otherwise, ensure NPM_TOKEN is set in GitHub secrets
-          npm ci
+          # Update package.json version
+          npm version ${PUBLISH_VERSION} --no-git-tag-version --allow-same-version
           
-          # Publish to npm
-          npm publish --access public
+          # Update index.js version
+          sed -i 's/version: "[^"]*"/version: "'${PUBLISH_VERSION}'"/' index.js
+          
+          cat package.json | grep version
+          cat index.js
+
+      - name: Publish @sbombs/daily to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd canaries/npm/daily
+          npm publish --access public --provenance
 
       - name: Create Git tag for daily release
         env:

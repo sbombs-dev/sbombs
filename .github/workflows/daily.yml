@@ -6,9 +6,9 @@ name: Publish Daily
 # No version files are modified in source; versioning is purely CI-driven.
 
 on:
-  #schedule:
-  #  # 06:00 UTC every day
-  #  - cron: '0 6 * * *'
+  schedule:
+    # 06:00 UTC every day
+    - cron: '0 6 * * *'
   # Allow manual trigger for testing
   workflow_dispatch:
 

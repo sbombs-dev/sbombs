@@ -329,16 +329,14 @@ Distribute these instructions:
 git clone https://github.com/YOUR-ORG/sbombs.packages.git
 cd sbombs.packages
 
-# Set up dev environment (installs hooks, dependencies)
-./setup-dev-env.sh
-
-# Run tests
-uv sync
-uv run pytest
-
 # Read the docs
 cat VERSION_CONTROL.md
 cat CONTRIBUTING.md
+cat agents.md
+
+# Test canary packages locally (optional)
+cd canaries/pypi/sbombs-daily && python -m build
+cd canaries/npm/daily && npm install
 ```
 
 ---
@@ -359,7 +357,6 @@ Before going live, verify all components:
 - [ ] GitHub Release created
 - [ ] Anchor workflow tested (on test branch or test registry)
 - [ ] Anchor safety checks working (prevents re-run)
-- [ ] Pre-commit hook installed locally (`./setup-dev-env.sh`)
 - [ ] Documentation read and understood by team
 
 ---

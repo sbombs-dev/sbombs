@@ -1,0 +1,129 @@
+name: Publish PyPI Yearly (Manual, Once-Per-Year)
+
+# Publish the sbombs-yearly control package to PyPI (once per year, never republish).
+# This is a MANUAL trigger only; the yearly package should not be republished within a year.
+# Version is stored in pyproject.toml (semantic: YYYY.M.0).
+# After successful publish, a Git tag is created pointing to the exact commit.
+#
+# NOTE: npm packages are NOT published by this workflow due to MFA requirements.
+# npm packages must be published manually.
+
+on:
+  # Manual trigger only; no schedule or auto-triggers
+  workflow_dispatch:
+    inputs:
+      confirm_yearly:
+        description: 'Type "yes" to confirm publishing sbombs-yearly (this is once-per-year only)'
+        required: true
+
+permissions:
+  contents: write  # For creating and pushing Git tags
+  id-token: write  # For OIDC trusted publishing to PyPI
+
+jobs:
+  verify-yearly-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify yearly version not already published
+        run: |
+          # Check if yearly tag already exists for this version
+          YEARLY_VERSION=$(grep 'version = ' canaries/pypi/sbombs-yearly/pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+          if git rev-parse "pypi-yearly@${YEARLY_VERSION}" 2>/dev/null; then
+            echo "❌ ERROR: Yearly version ${YEARLY_VERSION} has already been published!"
+            exit 1
+          fi
+          echo "✓ Yearly version check passed (not yet published)"
+
+      - name: Verify confirmation
+        run: |
+          if [[ "${{ github.event.inputs.confirm_yearly }}" != "yes" ]]; then
+            echo "❌ Confirmation not given. Aborting."
+            exit 1
+          fi
+          echo "✓ Confirmation verified"
+
+  publish-yearly:
+    needs: verify-yearly-safety
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Extract yearly version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep 'version = ' canaries/pypi/sbombs-yearly/pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "PyPI version: ${VERSION}"
+
+      - name: Build sbombs-yearly for PyPI
+        run: |
+          cd canaries/pypi/sbombs-yearly
+          
+          pip install build
+          python -m build
+          ls -lh dist/
+
+      - name: Publish sbombs-yearly to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: canaries/pypi/sbombs-yearly/dist/
+          repository-url: https://upload.pypi.org/legacy/
+
+      - name: Create immutable Git tag for yearly
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          TAG="pypi-yearly@${VERSION}"
+          
+          # Yearly tags should not exist (verified in earlier job), but check anyway
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "❌ ERROR: Tag ${TAG} already exists! This should not happen."
+            exit 1
+          fi
+          
+          git tag -a "${TAG}" -m "Published sbombs-yearly v${VERSION} to PyPI (yearly control package)" HEAD
+          git push origin "${TAG}"
+          
+          echo "✓ Tagged commit as ${TAG}"
+
+      - name: Create GitHub Release (immutable record)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAG="pypi-yearly@${VERSION}"
+          
+          # Create release (should not exist for yearly)
+          gh release create "${TAG}" \
+            --title "PyPI Yearly ${VERSION} (Annual Control)" \
+            --notes "**⚠️ YEARLY CONTROL PACKAGE (Annual Release, Do Not Republish Within Year)**
+
+          This is the yearly control package. It must not be republished until the next year.
+          
+          - PyPI: \`sbombs-yearly==${VERSION}\`
+          
+          Commit: ${{ github.sha }}
+          
+          **Note:** npm packages are not published automatically due to MFA requirements. 
+          Publish npm packages manually if needed.
+          
+          To verify the source code for this release:
+          \`\`\`bash
+          git show ${TAG}
+          \`\`\`"

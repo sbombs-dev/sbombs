@@ -1,0 +1,15 @@
+{
+  "name": "@sbombs/wdeps",
+  "version": "1.0.0",
+  "description": "SBOMBS test fixture with runtime dependencies. Do not depend on this package.",
+  "license": "MIT",
+  "private": false,
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "@sbombs/daily": ">=2026.10.8"
+  }
+}

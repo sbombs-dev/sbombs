@@ -38,6 +38,7 @@ Key facts that affect test design:
 |---|---|---|---|
 | 1 (now) | **Release date / immaturity** | `sbombs-daily`, `sbombs-yearly` | Daily snapshots (YYYY.M.D) + annual control (YYYY.M.0) |
 | 1 | **Pending catalog window** | `sbombs-daily` | Request today's version within 0–4 hours of publishing |
+| 1 (now) | **Dependency policies** | `sbombs-wdeps` | Package with runtime dependencies for testing transitive dependency resolution, version constraints, and dependency age policies |
 | 2 | **Malicious package policy** | `sbombs-eicar` | See "Phase 2" below. Restricted and not yet approved |
 | Later | **License** | `sbombs-mit`, `sbombs-agpl`, etc. | License-specific test fixtures |
 | Later | **Single-version / operational risk** | Various | Other policy dimensions |
@@ -50,11 +51,13 @@ sbombs.packages/
 │   ├── pypi/
 │   │   ├── sbombs-daily/       # Published daily (YYYY.M.D)
 │   │   ├── sbombs-yearly/      # Published yearly (YYYY.M.0)
+│   │   ├── sbombs-wdeps/       # Published manually (semantic versioning)
 │   │   └── sbombs-eicar/       # Phase 2: placeholder. NO literal test string
 │   ├── npm/
 │   │   ├── daily/              # Published as @sbombs/daily (YYYY.M.D)
-│   │   └── yearly/             # Published as @sbombs/yearly (YYYY.M.0)
-│   └── eicar/                  # Phase 2: placeholder. NO literal test string
+│   │   ├── yearly/             # Published as @sbombs/yearly (YYYY.M.0)
+│   │   ├── wdeps/              # Published as @sbombs/wdeps (semantic versioning)
+│   │   └── eicar/              # Phase 2: placeholder. NO literal test string
 └── .github/workflows/
     ├── daily.yml               # Cron 06:00 UTC, publishes PyPI + npm daily
     └── yearly.yml              # Manual trigger, publishes PyPI + npm yearly
@@ -66,14 +69,16 @@ sbombs.packages/
 |---|---|---|---|
 | `sbombs-daily` | Daily at 06:00 UTC | `YYYY.M.D` (e.g., `2026.9.29`) | Supplies versions of every age for testing immaturity thresholds |
 | `sbombs-yearly` | Once per year (manual) | `YYYY.M.0` (e.g., `2026.1.0`) | **Control**: immutable baseline. If blocked, test setup is wrong, not the policy |
+| `sbombs-wdeps` | Manual / on-demand | Semantic (e.g., `1.0.0`) | **Dependency testing**: has runtime dependency on `sbombs-daily>=2026.10.8` for testing transitive dependencies, version constraints, and dependency age policies |
 
 **Versioning strategy:**
 - **Daily (`YYYY.M.D`)**: One unique version per day in UTC. Each day increments the minor version; never reused.
 - **Yearly (`YYYY.M.0`)**: Semantic versioning with year in major position. Major increments annually; minor = release count within year (1, 2, 3…); patch reserved for hotfixes. Example: `2026.1.0` (first 2026 release), `2027.1.0` (first 2027 release).
+- **Wdeps (semantic)**: Standard semantic versioning (`MAJOR.MINOR.PATCH`). Version bumped when dependency constraints change or for testing different scenarios.
 
 ## ⚠️ Critical rules for agents
 
-1. **Packages must stay inert.** No install scripts (`preinstall`/`postinstall`, custom `setup.py` commands), no network calls, no file writes, no runtime dependencies, no code beyond a version string. Each README must say: *"Test fixture for supply-chain policy testing. Do not depend on this package."*
+1. **Packages must stay inert.** No install scripts (`preinstall`/`postinstall`, custom `setup.py` commands), no network calls, no file writes, no code beyond a version string. **Exception:** `sbombs-wdeps` intentionally has runtime dependencies for testing dependency policies. Each README must say: *"Test fixture for supply-chain policy testing. Do not depend on this package."*
 2. **Only packages in `canaries/` may be published publicly, and only through the release workflows.** Never publish from a local machine, and never add a manual `npm publish` or `twine upload` step outside `.github/workflows/`.
 3. **Never unpublish, yank, or deprecate package versions.** Old versions are the test data. Deprecation can also trigger other policy conditions and corrupt age results.
 4. **Do not add new daily packages or increase release frequency without maintainer approval.** PyPI prohibits excessive automated bulk activity. One release per package per day is the limit.

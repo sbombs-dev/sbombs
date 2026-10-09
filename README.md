@@ -43,7 +43,12 @@ SBOMBS publishes modular test-fixture packages to each registry. Current dimensi
   - Serves as an immutable control/baseline for validating test setup
   - Always old enough to pass age-based policies
 
-All packages are inert: no install scripts, no network calls, no dependencies.
+- **`sbombs-wdeps`** (PyPI) / `@sbombs/wdeps` (npm)
+  - Published manually with semantic versioning (e.g., `1.0.0`)
+  - Contains runtime dependency on `sbombs-daily>=2026.10.8`
+  - Use to test transitive dependency resolution, version constraints, and dependency age policies
+
+Most packages are inert (no install scripts, no network calls, no dependencies). **Exception:** `sbombs-wdeps` intentionally has dependencies for testing dependency-related policies.
 
 **Future dimensions** (planned): `sbombs-eicar` (Phase 2), `sbombs-mit`, `sbombs-agpl`, etc.
 
@@ -54,6 +59,7 @@ Use these packages to test your own supply chain policies. Example scenarios:
 - **Test release-date (immaturity) rules**: Request `sbombs-daily` versions of different ages (e.g., `2026.9.15`, `2026.9.10`)
 - **Test pending behavior**: Request today's `sbombs-daily` version (0 hours old)
 - **Validate your test setup**: Request `sbombs-yearly` — it should always pass age-based policies; if blocked, your setup needs adjustment
+- **Test dependency policies**: Request `sbombs-wdeps` to validate transitive dependency resolution, version constraints, and whether policies check dependency ages
 
 ## Development
 

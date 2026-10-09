@@ -1,0 +1,120 @@
+name: Publish PyPI Daily
+
+# Publish sbombs-daily to PyPI at 06:00 UTC daily.
+# Versions are computed as YYYY.M.D in UTC (e.g., 2026.10.9).
+# After successful publish, a Git tag is created pointing to the exact commit.
+# No version files are modified in source; versioning is purely CI-driven.
+#
+# NOTE: npm packages are NOT published by this workflow due to MFA requirements.
+# npm packages must be published manually.
+
+on:
+  schedule:
+    # 06:00 UTC every day
+    - cron: '0 6 * * *'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  publish-daily:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # For creating and pushing Git tags
+      id-token: write  # For OIDC trusted publishing to PyPI
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for tagging
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Compute daily version (UTC date)
+        id: version
+        run: |
+          export TZ=UTC
+          VERSION=$(date -u +'%Y.%-m.%-d')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Daily version: ${VERSION}"
+
+      - name: Build sbombs-daily for PyPI
+        env:
+          PUBLISH_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd canaries/pypi/sbombs-daily
+          
+          # Install build tools
+          pip install build
+          
+          # Update version in pyproject.toml (0.0.0 → YYYY.M.D)
+          sed -i 's/^version = "0.0.0"$/version = "'${PUBLISH_VERSION}'"/' pyproject.toml
+          
+          # Update version in __init__.py (0.0.0 → YYYY.M.D)
+          sed -i 's/^__version__ = "0.0.0"$/__version__ = "'${PUBLISH_VERSION}'"/' src/sbombs_daily/__init__.py
+          
+          # Verify the version updates
+          grep '^version = ' pyproject.toml
+          grep '^__version__ = ' src/sbombs_daily/__init__.py
+          
+          # Build the distribution (wheel + sdist)
+          python -m build
+          
+          # Verify the built packages
+          ls -lh dist/
+
+      - name: Publish sbombs-daily to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: canaries/pypi/sbombs-daily/dist/
+          repository-url: https://upload.pypi.org/legacy/
+
+      - name: Create Git tag for daily release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          
+          TAG="pypi-daily@${VERSION}"
+          
+          # Check if tag already exists
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "⚠️  Tag ${TAG} already exists, skipping tag creation"
+          else
+            git tag -a "${TAG}" -m "Published sbombs-daily v${VERSION} to PyPI" HEAD
+            git push origin "${TAG}"
+            echo "✓ Tagged commit as ${TAG}"
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          TAG="pypi-daily@${VERSION}"
+          
+          # Check if release already exists
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "⚠️  Release ${TAG} already exists, skipping release creation"
+            exit 0
+          fi
+          
+          # Create release
+          gh release create "${TAG}" \
+            --title "PyPI Daily ${VERSION}" \
+            --notes "**PyPI daily package published**
+
+          - PyPI: \`sbombs-daily==${VERSION}\`
+          
+          Commit: ${{ github.sha }}
+          
+          **Note:** npm packages are not published automatically due to MFA requirements. 
+          Publish npm packages manually if needed.
+          
+          To verify the source code for this release:
+          \`\`\`bash
+          git show ${TAG}
+          \`\`\`"

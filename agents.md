@@ -59,17 +59,26 @@ sbombs.packages/
 │   │   ├── wdeps/              # Published as @sbombs/wdeps (semantic versioning)
 │   │   └── eicar/              # Phase 2: placeholder. NO literal test string
 └── .github/workflows/
-    ├── daily.yml               # Cron 06:00 UTC, publishes PyPI + npm daily
-    └── yearly.yml              # Manual trigger, publishes PyPI + npm yearly
+    ├── publish-pypi-daily.yml  # Cron 06:00 UTC, publishes sbombs-daily to PyPI
+    ├── publish-pypi-yearly.yml # Manual trigger, publishes sbombs-yearly to PyPI
+    └── publish-pypi-wdeps.yml  # Manual trigger, publishes sbombs-wdeps to PyPI
 ```
+
+**Note on npm publishing:** npm packages are NOT published automatically due to MFA requirements. 
+npm packages must be published manually when needed.
 
 ## Packages
 
-| Package | Release pattern | Versioning | Purpose |
-|---|---|---|---|
-| `sbombs-daily` | Daily at 06:00 UTC | `YYYY.M.D` (e.g., `2026.9.29`) | Supplies versions of every age for testing immaturity thresholds |
-| `sbombs-yearly` | Once per year (manual) | `YYYY.M.0` (e.g., `2026.1.0`) | **Control**: immutable baseline. If blocked, test setup is wrong, not the policy |
-| `sbombs-wdeps` | Manual / on-demand | Semantic (e.g., `1.0.0`) | **Dependency testing**: has runtime dependency on `sbombs-daily>=2026.10.8` for testing transitive dependencies, version constraints, and dependency age policies |
+| Package | Release pattern | Versioning | PyPI Automation | npm Publishing |
+|---|---|---|---|---|
+| `sbombs-daily` | Daily at 06:00 UTC | `YYYY.M.D` (e.g., `2026.9.29`) | ✅ Automated | ⚠️ Manual (MFA required) |
+| `sbombs-yearly` | Once per year (manual) | `YYYY.M.0` (e.g., `2026.1.0`) | ✅ Automated | ⚠️ Manual (MFA required) |
+| `sbombs-wdeps` | Manual / on-demand | Semantic (e.g., `1.0.0`) | ✅ Automated | ⚠️ Manual (MFA required) |
+
+**Purpose:**
+- **sbombs-daily**: Supplies versions of every age for testing immaturity thresholds
+- **sbombs-yearly**: **Control**: immutable baseline. If blocked, test setup is wrong, not the policy
+- **sbombs-wdeps**: **Dependency testing**: has runtime dependency on `sbombs-daily>=2026.10.8` for testing transitive dependencies, version constraints, and dependency age policies
 
 **Versioning strategy:**
 - **Daily (`YYYY.M.D`)**: One unique version per day in UTC. Each day increments the minor version; never reused.
@@ -79,13 +88,13 @@ sbombs.packages/
 ## ⚠️ Critical rules for agents
 
 1. **Packages must stay inert.** No install scripts (`preinstall`/`postinstall`, custom `setup.py` commands), no network calls, no file writes, no code beyond a version string. **Exception:** `sbombs-wdeps` intentionally has runtime dependencies for testing dependency policies. Each README must say: *"Test fixture for supply-chain policy testing. Do not depend on this package."*
-2. **Only packages in `canaries/` may be published publicly, and only through the release workflows.** Never publish from a local machine, and never add a manual `npm publish` or `twine upload` step outside `.github/workflows/`.
+2. **PyPI packages are published via GitHub Actions workflows** using OIDC trusted publishing. npm packages must be published manually due to MFA requirements. Never publish from a local machine for PyPI, and never add a manual `twine upload` step outside `.github/workflows/`.
 3. **Never unpublish, yank, or deprecate package versions.** Old versions are the test data. Deprecation can also trigger other policy conditions and corrupt age results.
 4. **Do not add new daily packages or increase release frequency without maintainer approval.** PyPI prohibits excessive automated bulk activity. One release per package per day is the limit.
 5. **Never republish or modify `sbombs-yearly`.** Its annual, immutable release is the baseline. Version must match between PyPI and npm.
 6. **Never commit the EICAR test string (or any AV signature) literally**, in any file, commit message, issue, or test. It would get the repo and contributors' clones flagged by antivirus software.
 7. **Never publish EICAR or any other dual-use/security-research content to PyPI.** PyPI's policy forbids it, and enforcement is permanent. npm may have different policies for Phase 2.
-8. **Use trusted publishing (OIDC) only.** No long-lived registry tokens in secrets or code.
+8. **Use trusted publishing (OIDC) only for PyPI.** No long-lived registry tokens in secrets or code. npm publishing requires manual intervention with MFA.
 9. **Do not "fix" packages or fixtures** that look outdated, oddly versioned, or unlicensed. They are built that way on purpose.
 10. **For modular dimensions**: When adding a new package dimension (e.g., `sbombs-mit`, `sbombs-eicar`), follow the same naming pattern: `sbombs-[dimension]` on PyPI, `@sbombs/[dimension]` on npm. Maintain inertness and immutability rules.
 
@@ -107,6 +116,21 @@ Not approved yet. If a maintainer explicitly asks for it:
   - Yearly packages (e.g., `sbombs-yearly`): follow `YYYY.M.0` semantic versioning
   - Other packages: use immutable semantic versioning (1.0.0, 2.0.0, etc.) or date-based as appropriate
 - **Never republish or deprecate**: old versions are test data and must remain available forever.
+- **Publishing workflows**: 
+  - PyPI packages are published automatically via GitHub Actions workflows (OIDC trusted publishing)
+  - npm packages must be published manually due to MFA requirements
+  - Each PyPI package has its own dedicated workflow file for independent operation
 - **Copilot outputs**: Save AI-generated markdown files (setup checklists, implementation summaries, troubleshooting notes) to `copilot-outputs/` — this directory is git-ignored and for local development only.
+
+### Manual npm publishing
+
+Since npm publishing requires MFA and cannot be automated, use the following process:
+
+1. Ensure the npm package version matches the PyPI version (check `package.json`)
+2. Navigate to the package directory: `cd canaries/npm/{package}/`
+3. Authenticate with npm if needed: `npm login`
+4. Publish with provenance: `npm publish --access public --provenance`
+5. Complete MFA challenge when prompted
+6. Verify publication on npmjs.com
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for detailed development guidelines (maintainers only).
